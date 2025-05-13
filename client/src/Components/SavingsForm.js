@@ -1,55 +1,55 @@
+// src/Components/SavingsForm.js
+
 import React, { useEffect, useState } from "react";
 import {
-  Container,
-  Row,
-  Col,
-  Card,
-  CardBody,
-  CardTitle,
-  CardText,
-  Button,
-  Spinner,
+  Container, Row, Col, Card, CardBody, CardTitle, CardText, Button, Spinner
 } from "reactstrap";
 import { useSelector } from "react-redux";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 
 const SavingsForm = () => {
   const [entries, setEntries] = useState([]);
-  const [likedUsers, setLikedUsers] = useState({});
+  const [likedSavings, setLikedSavings] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const userEmail = useSelector((state) => state.users.user.email);
+  const location = useLocation();
 
   useEffect(() => {
-    const fetchSavings = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         if (userEmail) {
-          const response = await axios.get(`http://localhost:3001/getUserSavings/${userEmail}`);
-          setEntries(response.data);
+          const [savingsResponse, likesResponse] = await Promise.all([
+            axios.get(`http://localhost:3001/getUserSavings/${userEmail}`),
+            axios.get(`http://localhost:3001/getLikedSavings/${userEmail}`),
+          ]);
+          setEntries(savingsResponse.data);
+          setLikedSavings(likesResponse.data.map((like) => like.savingId._id));
         }
       } catch (error) {
-        console.error("Error fetching savings:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSavings();
+    fetchData();
+  }, [userEmail, location]);
 
-    const likes = JSON.parse(localStorage.getItem("likes")) || {};
-    setLikedUsers(likes);
-  }, [userEmail]);
-
-  const toggleLike = (id) => {
-    const updatedLikes = { ...likedUsers, [id]: !likedUsers[id] };
-    setLikedUsers(updatedLikes);
-    localStorage.setItem("likes", JSON.stringify(updatedLikes));
-  };
-
-  const handleClearLikes = () => {
-    localStorage.removeItem("likes");
-    setLikedUsers({});
+  const toggleLike = async (savingId) => {
+    try {
+      if (likedSavings.includes(savingId)) {
+        await axios.delete("http://localhost:3001/unlikeSaving", { data: { userEmail, savingId } });
+        setLikedSavings(likedSavings.filter((id) => id !== savingId));
+      } else {
+        await axios.post("http://localhost:3001/likeSaving", { userEmail, savingId });
+        setLikedSavings([...likedSavings, savingId]);
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    }
   };
 
   return (
@@ -58,38 +58,34 @@ const SavingsForm = () => {
         <Col>
           <h2 className="mb-4">🐑 Your Sheep Savings</h2>
 
-          <Button color="warning" onClick={handleClearLikes} className="mb-4">
-            Clear Likes
-          </Button>
-
           {loading ? (
-            <div className="text-center">
-              <Spinner color="primary" />
-            </div>
+            <div className="text-center"><Spinner color="primary" /></div>
           ) : entries.length === 0 ? (
-            <p className="text-center">No savings submitted yet. Start saving now! 🐑</p>
+            <p className="text-center">No savings submitted yet. 🐑</p>
           ) : (
             entries.map((entry, index) => (
               <Card className="mb-3" key={entry._id}>
                 <CardBody>
-                  <CardTitle tag="h5">
-                    🐑 Sheep Saving #{index + 1}
-                  </CardTitle>
+                  <CardTitle tag="h5">Saving #{index + 1}</CardTitle>
 
-                  <CardText><strong>Monthly Salary:</strong> OMR {entry.salary}</CardText>
-                  <CardText><strong>Electricity Bill:</strong> OMR {entry.electricity}</CardText>
-                  <CardText><strong>Water Bill:</strong> OMR {entry.water}</CardText>
-                  <CardText><strong>Household Expenses:</strong> OMR {entry.household}</CardText>
-                  <CardText><strong>Personal Use:</strong> OMR {entry.personal}</CardText>
-                  <CardText><strong>Total Expenses:</strong> OMR {entry.totalExpenses}</CardText>
-                  <CardText><strong>Remaining Salary:</strong> OMR {entry.remaining}</CardText>
+                  {[
+                    ["Monthly Salary", entry.salary],
+                    ["Electricity Bill", entry.electricity],
+                    ["Water Bill", entry.water],
+                    ["Household Expenses", entry.household],
+                    ["Personal Use", entry.personal],
+                    ["Total Expenses", entry.totalExpenses],
+                    ["Remaining Salary", entry.remaining],
+                  ].map(([label, value], idx) => (
+                    <CardText key={idx}><strong>{label}:</strong> OMR {value}</CardText>
+                  ))}
 
                   <Button
-                    color={likedUsers[entry._id] ? "danger" : "secondary"}
+                    color={likedSavings.includes(entry._id) ? "danger" : "secondary"}
                     onClick={() => toggleLike(entry._id)}
                     className="mt-2"
                   >
-                    {likedUsers[entry._id] ? "❤️ Liked" : "🤍 Like"}
+                    {likedSavings.includes(entry._id) ? "❤️ Liked" : "🤍 Like"}
                   </Button>
                 </CardBody>
               </Card>

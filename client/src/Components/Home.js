@@ -1,3 +1,5 @@
+// src/Components/Home.js
+
 import React, { useEffect, useState } from "react";
 import {
   Container, Row, Col, Button, Input,
@@ -22,16 +24,17 @@ const Home = () => {
   const [personal, setPersonal] = useState("");
   const [totalRemaining, setTotalRemaining] = useState(0);
   const [loading, setLoading] = useState(false);
-
-  const [goal, setGoal] = useState(1000); // default goal
+  const [goal, setGoal] = useState(1000);
 
   useEffect(() => {
     const fetchSavings = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:3001/getUserSavings/${userEmail}`);
-        const total = response.data.reduce((acc, item) => acc + Number(item.remaining), 0);
-        setTotalRemaining(total);
+        if (userEmail) {
+          const response = await axios.get(`http://localhost:3001/getUserSavings/${userEmail}`);
+          const total = response.data.reduce((acc, item) => acc + Number(item.remaining), 0);
+          setTotalRemaining(total);
+        }
       } catch (error) {
         console.error("Error fetching your savings", error);
       } finally {
@@ -39,10 +42,7 @@ const Home = () => {
       }
     };
 
-    if (userEmail) {
-      fetchSavings();
-    }
-
+    fetchSavings();
     const userGoal = localStorage.getItem(`goal_${userEmail}`);
     if (userGoal) setGoal(Number(userGoal));
   }, [userEmail]);
@@ -52,9 +52,12 @@ const Home = () => {
     const totalExpenses = +electricity + +water + +household + +personal;
     const remaining = +salary - totalExpenses;
 
+    const cleanUserName = (userName || "Anonymous").trim();
+    const cleanUserEmail = userEmail.trim();
+
     const newEntry = {
-      userName: userName || "Anonymous",
-      userEmail,
+      userName: cleanUserName,
+      userEmail: cleanUserEmail,
       salary,
       electricity,
       water,
@@ -67,6 +70,13 @@ const Home = () => {
     try {
       await axios.post("http://localhost:3001/submitSaving", newEntry);
       alert("✅ Saving submitted successfully!");
+
+      setSalary("");
+      setElectricity("");
+      setWater("");
+      setHousehold("");
+      setPersonal("");
+
       navigate("/savings");
     } catch (error) {
       console.error("Saving error:", error);
@@ -91,43 +101,38 @@ const Home = () => {
                   <Spinner color="primary" />
                 ) : (
                   <>
-                    <CardText><strong>Remaining:</strong> OMR {totalRemaining.toFixed(2)}</CardText>
-                    <Progress value={progress} className="mt-3">
-                      {progress}% of {goal} OMR
+                    <CardText><strong>Total Remaining Saved:</strong> OMR {totalRemaining.toFixed(2)}</CardText>
+                    <Progress
+                      value={progress}
+                      className="mt-3"
+                      color={progress >= 100 ? "success" : progress >= 75 ? "info" : progress >= 50 ? "warning" : "danger"}
+                    >
+                      {progress}% toward {goal} OMR Goal
                     </Progress>
                   </>
                 )}
               </CardBody>
             </Card>
 
-            <div className="mb-4">
-              <Button color="info" onClick={() => navigate("/savings")}>
-                📄 View All Savings
-              </Button>
-            </div>
+            <Button color="info" className="mb-4" onClick={() => navigate("/savings")}>
+              📄 View All Savings
+            </Button>
 
             <h2 className="mb-4">Monthly Budget Form</h2>
             <Form onSubmit={handleSave}>
-              <FormGroup>
-                <Label for="salary" className="register-label">Monthly Salary</Label>
-                <Input type="number" value={salary} onChange={(e) => setSalary(e.target.value)} required />
-              </FormGroup>
-              <FormGroup>
-                <Label for="electricity" className="register-label">Electricity Bill</Label>
-                <Input type="number" value={electricity} onChange={(e) => setElectricity(e.target.value)} required />
-              </FormGroup>
-              <FormGroup>
-                <Label for="water" className="register-label">Water Bill</Label>
-                <Input type="number" value={water} onChange={(e) => setWater(e.target.value)} required />
-              </FormGroup>
-              <FormGroup>
-                <Label for="household" className="register-label">Household Expenses</Label>
-                <Input type="number" value={household} onChange={(e) => setHousehold(e.target.value)} required />
-              </FormGroup>
-              <FormGroup>
-                <Label for="personal" className="register-label">Personal Use</Label>
-                <Input type="number" value={personal} onChange={(e) => setPersonal(e.target.value)} required />
-              </FormGroup>
+              {[
+                { label: "Monthly Salary", value: salary, setter: setSalary },
+                { label: "Electricity Bill", value: electricity, setter: setElectricity },
+                { label: "Water Bill", value: water, setter: setWater },
+                { label: "Household Expenses", value: household, setter: setHousehold },
+                { label: "Personal Use", value: personal, setter: setPersonal },
+              ].map(({ label, value, setter }, idx) => (
+                <FormGroup key={idx}>
+                  <Label>{label}</Label>
+                  <Input type="number" value={value} onChange={(e) => setter(e.target.value)} required />
+                </FormGroup>
+              ))}
+
               <Button color="success" block type="submit">
                 Save
               </Button>

@@ -1,4 +1,5 @@
-// client/src/Components/Register.js
+// src/Components/Register.js
+
 import {
   Container,
   Form,
@@ -7,7 +8,8 @@ import {
   Input,
   Button,
   Row,
-  Col
+  Col,
+  Spinner,
 } from "reactstrap";
 import { useDispatch } from "react-redux";
 import { registerUser } from "../Features/UserSlice";
@@ -26,7 +28,7 @@ const Register = () => {
     handleSubmit: submitForm,
     trigger,
     setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(userValidationsSchema),
   });
@@ -34,98 +36,88 @@ const Register = () => {
   const handleSubmit = async (data) => {
     try {
       const userData = {
-        name: data.name,
-        email: data.email,
+        name: data.name.trim(),
+        email: data.email.trim().toLowerCase(),
         password: data.password,
       };
-      console.log("Validation passed:", data);
+      console.log("Validation passed:", userData);
 
-      // Dispatch registerUser
-      await dispatch(registerUser(userData));
+      await dispatch(registerUser(userData)).unwrap();
 
-      alert("Registration successful!");
+      alert("🎉 Registration successful! Please login.");
       navigate("/login");
     } catch (error) {
-      console.error("Registration error", error);
+      console.error("Registration error:", error);
+      alert("❌ Registration failed. Try again.");
     }
   };
 
   return (
     <div
       className="register-background"
-      style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: "cover" }}
+      style={{
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: "cover",
+        minHeight: "100vh",
+      }}
     >
-      <Container className="register-page py-4">
+      <Container className="register-page py-5">
         <Row className="justify-content-center">
           <Col md={10} lg={8}>
-            <h2 className="text-center register-title mb-4">Register for SaveWell</h2>
+            <h2 className="text-center mb-4" style={{ fontFamily: "Segoe UI", fontWeight: "bold" }}>
+              Register for SaveWell
+            </h2>
+
             <Form onSubmit={submitForm(handleSubmit)} autoComplete="off">
-              <FormGroup>
-                <Label for="name">Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  {...register("name")}
-                  onChange={(e) => {
-                    setValue("name", e.target.value);
-                    trigger("name");
-                  }}
-                  placeholder="Enter your name"
-                />
-                <p className="text-danger">{errors.name?.message}</p>
-              </FormGroup>
+              {[
+                { id: "name", type: "text", label: "Full Name", placeholder: "Enter your name" },
+                { id: "email", type: "email", label: "Email", placeholder: "Enter your email" },
+                { id: "password", type: "password", label: "Password", placeholder: "Enter your password" },
+                { id: "confirmpassword", type: "password", label: "Confirm Password", placeholder: "Confirm your password" },
+              ].map(({ id, type, label, placeholder }) => (
+                <FormGroup key={id}>
+                  <Label for={id} style={{ color: "#e91e63", fontWeight: "600" }}>
+                    {label}
+                  </Label>
+                  <Input
+                    id={id}
+                    type={type}
+                    {...register(id)}
+                    onChange={(e) => {
+                      setValue(id, e.target.value);
+                      trigger(id);
+                    }}
+                    placeholder={placeholder}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-danger" style={{ fontSize: "0.9rem" }}>{errors[id]?.message}</p>
+                </FormGroup>
+              ))}
 
-              <FormGroup>
-                <Label for="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  {...register("email")}
-                  onChange={(e) => {
-                    setValue("email", e.target.value);
-                    trigger("email");
-                  }}
-                  placeholder="Enter your email"
-                />
-                <p className="text-danger">{errors.email?.message}</p>
-              </FormGroup>
-
-              <FormGroup>
-                <Label for="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register("password")}
-                  onChange={(e) => {
-                    setValue("password", e.target.value);
-                    trigger("password");
-                  }}
-                  placeholder="Enter your password"
-                />
-                <p className="text-danger">{errors.password?.message}</p>
-              </FormGroup>
-
-              <FormGroup>
-                <Label for="confirmpassword">Confirm Password</Label>
-                <Input
-                  id="confirmpassword"
-                  type="password"
-                  {...register("confirmpassword")}
-                  onChange={(e) => {
-                    setValue("confirmpassword", e.target.value);
-                    trigger("confirmpassword");
-                  }}
-                  placeholder="Confirm your password"
-                />
-                <p className="text-danger">{errors.confirmpassword?.message}</p>
-              </FormGroup>
-
-              <Button type="submit" color="primary" className="w-100">
-                Register
+              <Button
+                type="submit"
+                block
+                disabled={isSubmitting}
+                style={{
+                  backgroundColor: "#4CAF50",
+                  border: "none",
+                  fontWeight: "bold",
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Spinner size="sm" /> Registering...
+                  </>
+                ) : (
+                  "Register"
+                )}
               </Button>
 
-              <p className="mt-3 text-center">
-                Already have an account? <Link to="/login">Login Here</Link>
+              <p className="mt-3 text-center" style={{ fontSize: "0.95rem" }}>
+                Already have an account?{" "}
+                <Link to="/login" style={{ textDecoration: "underline", color: "#e91e63", fontWeight: "600" }}>
+                  Login Here
+                </Link>
               </p>
             </Form>
           </Col>

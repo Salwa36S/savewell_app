@@ -1,46 +1,48 @@
+// src/Components/SavingsSummary.js
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
-import { Progress, Input, Button, FormGroup, Label, Form } from "reactstrap";
+import { Progress, Input, Button, FormGroup, Label, Form, Spinner } from "reactstrap";
 
 const SavingsSummary = () => {
   const [entries, setEntries] = useState([]);
-  const [goal, setGoal] = useState(1000); // Default goal
+  const [goal, setGoal] = useState(1000);
   const [newGoal, setNewGoal] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const userEmail = useSelector((state) => state.users.user.email);
 
   useEffect(() => {
     const fetchSavings = async () => {
       try {
+        setLoading(true);
         if (userEmail) {
           const response = await axios.get(`http://localhost:3001/getUserSavings/${userEmail}`);
           setEntries(response.data);
         }
       } catch (error) {
         console.error("Error fetching savings data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchSavings();
 
-    // Load saved goal from localStorage
-    const savedGoal = localStorage.getItem("userGoal");
-    if (savedGoal) {
-      setGoal(Number(savedGoal));
-    }
+    const savedGoal = localStorage.getItem(`goal_${userEmail}`);
+    if (savedGoal) setGoal(Number(savedGoal));
   }, [userEmail]);
 
-  const totalIncome = entries.reduce((acc, curr) => acc + Number(curr.salary), 0);
-  const totalExpense = entries.reduce((acc, curr) => acc + Number(curr.totalExpenses), 0);
-  const currentSavings = totalIncome - totalExpense;
-  const progress = goal !== 0 ? ((currentSavings / goal) * 100).toFixed(2) : 0;
+  const totalRemaining = entries.reduce((acc, curr) => acc + Number(curr.remaining), 0);
+
+  const progress = goal ? ((totalRemaining / goal) * 100).toFixed(2) : 0;
 
   const handleGoalSubmit = (e) => {
     e.preventDefault();
     if (newGoal > 0) {
       setGoal(Number(newGoal));
-      localStorage.setItem("userGoal", newGoal);
+      localStorage.setItem(`goal_${userEmail}`, newGoal);
       setNewGoal("");
     } else {
       alert("Please enter a valid goal greater than 0.");
@@ -48,8 +50,8 @@ const SavingsSummary = () => {
   };
 
   const handleResetGoal = () => {
-    localStorage.removeItem("userGoal");
-    setGoal(1000); // Reset to default
+    localStorage.removeItem(`goal_${userEmail}`);
+    setGoal(1000);
     alert("Goal has been reset to 1000 OMR 🐑.");
   };
 
@@ -67,15 +69,19 @@ const SavingsSummary = () => {
 
   return (
     <div style={{ marginTop: "30px" }}>
+      <h2 className="mb-4">🐑 Savings Summary</h2>
+
       <Form onSubmit={handleGoalSubmit}>
         <FormGroup>
-          <Label for="goal" className="mb-2"><strong>🐑 Set Your Sheep Savings Goal (OMR):</strong></Label>
+          <Label for="goal" className="mb-2">
+            <strong>Set Your Sheep Savings Goal (OMR):</strong>
+          </Label>
           <Input
             type="number"
             id="goal"
             value={newGoal}
             onChange={(e) => setNewGoal(e.target.value)}
-            placeholder="Enter your goal..."
+            placeholder="Enter your new goal..."
           />
         </FormGroup>
         <Button color="primary" type="submit" className="me-2">
@@ -88,19 +94,35 @@ const SavingsSummary = () => {
 
       <hr />
 
-      <p><strong>Total Income:</strong> OMR {totalIncome.toFixed(2)}</p>
-      <p><strong>Total Expenses:</strong> OMR {totalExpense.toFixed(2)}</p>
-      <p><strong>Current Savings:</strong> OMR {currentSavings.toFixed(2)}</p>
-      <p><strong>Goal Progress:</strong> {progress}%</p>
+      {loading ? (
+        <div className="text-center">
+          <Spinner color="primary" />
+        </div>
+      ) : entries.length === 0 ? (
+        <p className="text-center">No savings data yet. Start saving to see your progress! 🐑</p>
+      ) : (
+        <>
+          <p><strong>Total Remaining Saved:</strong> OMR {totalRemaining.toFixed(2)}</p>
+          <p><strong>Goal Progress:</strong> {progress}%</p>
 
-      <Progress value={progress} color="success" style={{ height: "25px", marginBottom: "10px" }}>
-        {progress}% toward 🐑 Goal of {goal} OMR
-      </Progress>
+          <Progress
+            value={progress}
+            color={
+              progress >= 100 ? "success" :
+              progress >= 75 ? "info" :
+              progress >= 50 ? "warning" :
+              "danger"
+            }
+            style={{ height: "25px", marginBottom: "10px" }}
+          >
+            {progress}% toward 🐑 goal of {goal} OMR
+          </Progress>
 
-      {/* Motivational message */}
-      <p style={{ fontSize: "18px", fontWeight: "bold", color: "#4CAF50", marginTop: "10px" }}>
-        {getMotivationalMessage()}
-      </p>
+          <p style={{ fontSize: "18px", fontWeight: "bold", color: "#4CAF50", marginTop: "10px" }}>
+            {getMotivationalMessage()}
+          </p>
+        </>
+      )}
     </div>
   );
 };

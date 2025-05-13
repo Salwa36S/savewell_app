@@ -1,4 +1,3 @@
-// client/src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import Login from "./Components/Login";
@@ -7,7 +6,8 @@ import Profile from "./Components/Profile";
 import Home from "./Components/Home";
 import SavingsForm from "./Components/SavingsForm";
 import Feedback from "./Components/Feedback";
-import SavingsSummary from "./Components/SavingsSummary"; // 🆕 Add this import!
+import SavingsSummary from "./Components/SavingsSummary";
+import LikedSavingsPage from "./Components/LikedSavingsPage"; // 🆕 Add this import!
 import { Container, Row, Col } from "reactstrap";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "./Features/UserSlice";
@@ -60,8 +60,9 @@ const App = () => {
                 <Link to="/home" style={{ color: "white", marginRight: "15px" }}>Home</Link>
                 <Link to="/profile" style={{ color: "white", marginRight: "15px" }}>Profile</Link>
                 <Link to="/savings" style={{ color: "white", marginRight: "15px" }}>Savings</Link>
-                <Link to="/summary" style={{ color: "white", marginRight: "15px" }}>Summary</Link> {/* 🆕 Add link to SavingsSummary */}
+                <Link to="/summary" style={{ color: "white", marginRight: "15px" }}>Summary</Link>
                 <Link to="/feedback" style={{ color: "white", marginRight: "15px" }}>Feedback</Link>
+                <Link to="/liked-savings" style={{ color: "white", marginRight: "15px" }}>❤️ Liked Savings</Link> {/* 🆕 New Liked Savings link */}
                 <LogoutLink />
               </div>
             )}
@@ -78,7 +79,8 @@ const App = () => {
             <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
             <Route path="/savings" element={<PrivateRoute><SavingsForm /></PrivateRoute>} />
             <Route path="/feedback" element={<PrivateRoute><Feedback /></PrivateRoute>} />
-            <Route path="/summary" element={<PrivateRoute><SavingsSummary /></PrivateRoute>} /> {/* 🆕 Route to view savings summary */}
+            <Route path="/summary" element={<PrivateRoute><SavingsSummary /></PrivateRoute>} />
+            <Route path="/liked-savings" element={<PrivateRoute><LikedSavingsPage /></PrivateRoute>} /> {/* 🆕 LikedSavingsPage route */}
           </Routes>
         </main>
 
