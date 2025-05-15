@@ -24,17 +24,26 @@ mongoose.connect("mongodb+srv://yasalwa53:save123@cluster0.onbuymi.mongodb.net/S
 
 // File upload setup
 const __filename = fileURLToPath(import.meta.url);
+
+// Get the directory name from the current file path
 const __dirname = dirname(__filename);
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Set up middleware to serve static files from the 'uploads' directory
+// Requests to '/uploads' will serve files from the local 'uploads' folder
+app.use("/uploads", express.static(__dirname + "/uploads"));
 
+
+// Set up multer for file storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Specify the directory to save uploaded files
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname); // Unique filename
+  },
 });
+// Create multer instance
 const upload = multer({ storage: storage });
-
-// ==================== ROUTES ==================== //
 
 // 🧩 User Registration
 app.post("/registerUser", async (req, res) => {

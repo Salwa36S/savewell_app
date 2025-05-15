@@ -1,4 +1,5 @@
 // client/src/Features/UserSlice.js
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -11,7 +12,7 @@ const initialState = {
   errorMessage: "",
 };
 
-// Thunk for user registration
+// ✅ Thunk for user registration
 export const registerUser = createAsyncThunk(
   "users/registerUser",
   async (userData, { rejectWithValue }) => {
@@ -24,7 +25,7 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// Thunk for user login
+// ✅ Thunk for user login
 export const login = createAsyncThunk(
   "users/login",
   async (userData, { rejectWithValue }) => {
@@ -37,15 +38,15 @@ export const login = createAsyncThunk(
   }
 );
 
-// Thunk for updating user profile
+// ✅ Thunk for updating user profile (with FormData)
 export const updateUserProfile = createAsyncThunk(
   "users/updateUserProfile",
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `http://localhost:3001/updateUserProfile/${userData.email}`,
+        `http://localhost:3001/updateUserProfile/${userData.get("email")}`, // Email from FormData
         userData,
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
       return response.data.user;
     } catch (error) {
@@ -75,6 +76,7 @@ export const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // 🛠 Register
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
       })
@@ -89,6 +91,7 @@ export const userSlice = createSlice({
         state.errorMessage = action.payload;
       })
 
+      // 🛠 Login
       .addCase(login.pending, (state) => {
         state.isLoading = true;
       })
@@ -103,11 +106,13 @@ export const userSlice = createSlice({
         state.errorMessage = action.payload;
       })
 
+      // 🛠 Update Profile
       .addCase(updateUserProfile.pending, (state) => {
         state.isLoading = true;
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isSuccess = true;
         state.user = action.payload;
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
@@ -118,7 +123,8 @@ export const userSlice = createSlice({
   },
 });
 
-// 🛠 Export logout + resetState
+// 🛠 Export reducers
 export const { logout, resetState } = userSlice.actions;
 
+// 🛠 Export user reducer
 export default userSlice.reducer;
