@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/static/css/main.50b9ccc2.css",
+    "main.js": "/static/js/main.bcf211f2.js",
+    "static/media/logoSaveWell.png": "/static/media/logoSaveWell.776a29124ce53b182d8e.png",
+    "static/media/backgroud.jpg": "/static/media/backgroud.d84baeb7977f32ae36ed.jpg",
+    "index.html": "/index.html",
+    "main.50b9ccc2.css.map": "/static/css/main.50b9ccc2.css.map",
+    "main.bcf211f2.js.map": "/static/js/main.bcf211f2.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.50b9ccc2.css",
+    "static/js/main.bcf211f2.js"
+  ]
+}

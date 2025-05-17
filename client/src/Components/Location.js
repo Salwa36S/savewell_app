@@ -1,51 +1,39 @@
-// client/src/Components/Location.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const Location = () => {
-  const [ip, setIp] = useState(null);
-  const [geoData, setGeoData] = useState(null);
-
-  const fetchAddress = async () => {
-    try {
-      const response = await axios.get("https://api.ipify.org?format=json");
-      setIp(response.data.ip);
-    } catch (error) {
-      console.error("Error fetching IP address:", error.message);
-    }
-  };
-
-  const getGeoLocationData = async () => {
-    if (!ip) return;
-    try {
-      const response = await axios.get(
-        `https://geo.ipify.org/api/v2/country?apiKey=at_tnFQRui0pGGPCcojONbpWkv2SOJQK&ipAddress=${ip}`
-      );
-      setGeoData(response.data);
-      console.log("GeoLocation Data:", response.data);
-    } catch (error) {
-      console.error("Error fetching geolocation data:", error.message);
-    }
-  };
+  const [location, setLocation] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchAddress();
+    const fetchLocation = async () => {
+      try {
+        const res = await axios.get("https://ipwho.is/");
+        if (res.data.success === false) {
+          throw new Error(res.data.message || "Failed to get location");
+        }
+        setLocation(res.data);
+      } catch (err) {
+        setError("⚠️ Could not fetch location data. " + (err.message || ""));
+        console.error("Location fetch error:", err);
+      }
+    };
+
+    fetchLocation();
   }, []);
-
-  useEffect(() => {
-    if (ip) {
-      getGeoLocationData();
-    }
-  }, [ip]);
 
   return (
     <div className="Location">
-      {ip ? <p>IP Address: {ip}</p> : <p>Loading IP address...</p>}
-      {geoData ? (
-        <div>
-          <p>Country: {geoData.location.country}</p>
-          <p>Region: {geoData.location.region}</p>
-        </div>
+      {error ? (
+        <p className="text-danger">{error}</p>
+      ) : location ? (
+        <>
+          <p><strong>IP Address:</strong> {location.ip}</p>
+          <p><strong>Country:</strong> {location.country}</p>
+          <p><strong>Region:</strong> {location.region}</p>
+          <p><strong>City:</strong> {location.city}</p>
+          <p><strong>ISP:</strong> {location.connection?.isp || "N/A"}</p>
+        </>
       ) : (
         <p>Loading Geolocation Data...</p>
       )}

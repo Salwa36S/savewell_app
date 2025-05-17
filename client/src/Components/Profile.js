@@ -1,140 +1,95 @@
-// Profile.jsx
-import {
-  Form,
-  FormGroup,
-  Input,
-  Label,
-  Button,
-  Container,
-  Row,
-  Col,
-} from "reactstrap";
-import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { updateUserProfile } from "../Features/UserSlice";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { userValidationsSchema } from "../Validation/UserValidation";
+import {
+  Container, Row, Col, Form, FormGroup, Label,
+  Input, Button, Spinner, Card, CardBody
+} from "reactstrap";
 import Location from "./Location";
-import profilePlaceholder from "../Images/profile.png";
-import loc from "../Images/loc.png";
-import "../App.css"; // ✅ Styling for button/image if needed
+import defaultProfileImage from "../Images/profile.png";
 
 const Profile = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { user, isLoading } = useSelector((state) => state.users);
+  const [preview, setPreview] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
 
-  const [name, setName] = useState(user.name || "");
-  const [pwd, setPwd] = useState(user.password || "");
-  const [profilePic, setProfilePic] = useState(user.profilePic || "");
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const file = e.target.profilePic.files[0];
+    if (!file) return alert("Please choose an image");
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(userValidationsSchema),
-  });
+    const formData = new FormData();
+    formData.append("email", user.email);
+    formData.append("name", user.name);
+    formData.append("profilePic", file);
+
+    dispatch(updateUserProfile(formData));
+    setSubmitted(true);
+  };
 
   useEffect(() => {
-    if (!user.email) {
-      navigate("/login");
+    if (submitted && user?.profilePic) {
+      setPreview(`http://localhost:3001/uploads/${user.profilePic}`);
     }
-  }, [user.email, navigate]);
+  }, [submitted, user]);
 
-  const onSubmit = () => {
-    const updatedUser = new FormData();
-    updatedUser.append("email", user.email);
-    updatedUser.append("name", name);
-    updatedUser.append("password", pwd);
-    if (profilePic && typeof profilePic !== "string") {
-      updatedUser.append("profilePic", profilePic);
-    }
-
-    dispatch(updateUserProfile(updatedUser));
-    alert("Profile Updated Successfully!");
-    navigate("/login"); // Force re-login after updating
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfilePic(file);
-    }
-  };
-
-  const renderProfileImage = () => {
-    if (profilePic && typeof profilePic === "string") {
-      return `http://localhost:3001/uploads/${profilePic}`; // Adjust URL if your server address is different
-    } else if (profilePic && typeof profilePic === "object") {
-      return URL.createObjectURL(profilePic);
-    } else {
-      return profilePlaceholder;
-    }
-  };
+  const imageToDisplay = preview || (user?.profilePic
+    ? `http://localhost:3001/uploads/${user.profilePic}`
+    : defaultProfileImage);
 
   return (
-    <Container className="py-5">
-      <Row className="align-items-start">
-        {/* Profile Information */}
-        <Col md={7} className="text-center">
-          <img
-            src={renderProfileImage()}
-            alt="User"
-            className="profileImage mb-4"
-            style={{ width: "200px", height: "200px", borderRadius: "50%", objectFit: "cover" }}
-          />
-
-          <Form onSubmit={handleSubmit(onSubmit)}>
-            <FormGroup className="text-start">
-              <Label>Upload New Profile Photo</Label>
-              <Input type="file" onChange={handleFileChange} />
-            </FormGroup>
-
-            <FormGroup className="text-start">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                {...register("name")}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
+    <Container className="my-5">
+      <Row>
+        {/* LEFT: User Profile */}
+        <Col md={6}>
+          <Card className="p-4 userdisplay">
+            <CardBody className="text-center">
+              <h3 className="register-title">👤 Your Profile</h3>
+              <img
+                src={imageToDisplay}
+                alt="Profile"
+                className="profileImage"
               />
-              {errors.name && <p className="text-danger">{errors.name.message}</p>}
-            </FormGroup>
+              <p><strong>Name:</strong> {user?.name}</p>
+              <p><strong>Email:</strong> {user?.email}</p>
 
-            <FormGroup className="text-start">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={pwd}
-                {...register("password")}
-                onChange={(e) => setPwd(e.target.value)}
-                placeholder="Enter your password"
-              />
-              {errors.password && <p className="text-danger">{errors.password.message}</p>}
-            </FormGroup>
+              {/* 📸 Upload image */}
+              <Form onSubmit={handleSubmit} encType="multipart/form-data">
+                <FormGroup>
+                  <Label for="profilePic">Update Profile Picture</Label>
+                  <Input
+                    type="file"
+                    id="profilePic"
+                    name="profilePic"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setPreview(reader.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </FormGroup>
 
-            <Button color="primary" type="submit" disabled={isLoading} block>
-              {isLoading ? "Updating..." : "Update Profile"}
-            </Button>
-          </Form>
+                <Button color="success" block type="submit" disabled={isLoading}>
+                  {isLoading ? <Spinner size="sm" /> : "Upload Image"}
+                </Button>
+              </Form>
+            </CardBody>
+          </Card>
         </Col>
 
-        {/* Location Section */}
-        <Col md={5} className="text-center">
-          <img
-            src={loc}
-            alt="Location Icon"
-            className="profileImage mb-4"
-            style={{ width: "150px", height: "150px" }}
-          />
-          <h3>Your Location</h3>
-          <Location />
+        {/* RIGHT: Location Info */}
+        <Col md={6}>
+          <Card className="p-4 locationDisplay">
+            <CardBody className="text-center">
+              <h3 className="register-title">📍 Your Location Info</h3>
+              <Location />
+            </CardBody>
+          </Card>
         </Col>
       </Row>
     </Container>
